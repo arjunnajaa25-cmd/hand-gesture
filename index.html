@@ -162,8 +162,10 @@ handDetector.onResults((results) => {
 
 // Baca gambar dari kamera yang SUDAH ADA
 async function detectHand() {
-  if (video.readyState >= 2) {
-    await handDetector.send({ image: video });
+  const videoElement = document.getElementById("video");
+
+  if (videoElement && videoElement.readyState >= 2) {
+    await handDetector.send({ image: videoElement });
   }
 
   requestAnimationFrame(detectHand);
