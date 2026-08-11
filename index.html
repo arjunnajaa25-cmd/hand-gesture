@@ -89,6 +89,90 @@
   </script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script>
+const handDetector = new Hands({
+  locateFile: (file) => {
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+  }
+});
+
+handDetector.setOptions({
+  maxNumHands: 1,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.6,
+  minTrackingConfidence: 0.6
+});
+
+handDetector.onResults((results) => {
+  if (!results.multiHandLandmarks ||
+      results.multiHandLandmarks.length === 0) {
+    console.log("Tangan belum terlihat");
+    return;
+  }
+
+  const hand = results.multiHandLandmarks[0];
+
+  let fingers = 0;
+
+  // Telunjuk
+  if (hand[8].y < hand[6].y) {
+    fingers++;
+  }
+
+  // Jari tengah
+  if (hand[12].y < hand[10].y) {
+    fingers++;
+  }
+
+  // Jari manis
+  if (hand[16].y < hand[14].y) {
+    fingers++;
+  }
+
+  // Kelingking
+  if (hand[20].y < hand[18].y) {
+    fingers++;
+  }
+
+  // Ibu jari
+  if (Math.abs(hand[4].x - hand[2].x) > 0.08) {
+    fingers++;
+  }
+
+  console.log("Jari terdeteksi:", fingers);
+
+  const fingersText = document.getElementById("fingersText");
+
+  if (fingersText) {
+    fingersText.innerText = "Fingers: " + fingers;
+  }
+
+  const result = document.getElementById("result");
+
+  if (result) {
+    if (fingers === 1) {
+      result.innerText = "MY NAME IS";
+    } else if (fingers === 2) {
+      result.innerText = "ARJUNNAJA";
+    } else {
+      result.innerText = "Tunjukkan gesture";
+    }
+  }
+});
+
+// Baca gambar dari kamera yang SUDAH ADA
+async function detectHand() {
+  if (video.readyState >= 2) {
+    await handDetector.send({ image: video });
+  }
+
+  requestAnimationFrame(detectHand);
+}
+
+detectHand();
+</script>
 
 </body>
 </html>
+
+
