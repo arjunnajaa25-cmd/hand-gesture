@@ -1,180 +1,511 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hand Gesture</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      margin: 0;
-      background: #050505;
-      color: #00ff66;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
+<title>AI Hand Gesture</title>
 
-    h1 {
-      margin-top: 25px;
-      font-size: 28px;
-    }
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
-    #camera {
-      width: 90%;
-      max-width: 700px;
-      border: 2px solid #00ff66;
-      border-radius: 15px;
-      transform: scaleX(-1);
-    }
+<style>
 
-    #result {
-      font-size: 32px;
-      font-weight: bold;
-      margin-top: 20px;
-    }
+* {
+    box-sizing: border-box;
+}
 
-    #fingers {
-      font-size: 18px;
-      margin-top: 10px;
-    }
+body {
+    margin: 0;
+    background: #050914;
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+}
 
-    button {
-      margin-top: 20px;
-      padding: 14px 25px;
-      border: none;
-      border-radius: 10px;
-      background: #00ff66;
-      color: black;
-      font-size: 18px;
-      font-weight: bold;
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 32px;
+    margin-bottom: 5px;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    color: #7e8aa5;
+    margin-bottom: 20px;
+}
+
+.camera-box {
+    position: relative;
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #02050b;
+    border: 1px solid #26334d;
+    box-shadow:
+        0 0 30px rgba(0, 200, 255, 0.12),
+        inset 0 0 30px rgba(0, 200, 255, 0.05);
+}
+
+video {
+    width: 100%;
+    display: block;
+    transform: scaleX(-1);
+}
+
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1);
+}
+
+.result {
+    margin-top: 20px;
+    padding: 22px;
+    border-radius: 18px;
+    background: #0b1220;
+    border: 1px solid #26334d;
+    box-shadow: 0 0 25px rgba(0, 200, 255, 0.08);
+}
+
+.detected {
+    font-size: 28px;
+    font-weight: bold;
+    color: #00e5ff;
+    min-height: 35px;
+}
+
+.status {
+    margin-top: 10px;
+    color: #7e8aa5;
+}
+
+button {
+    margin-top: 20px;
+    padding: 14px 25px;
+    border: none;
+    border-radius: 12px;
+    background: #00bcd4;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+.scanner {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #00e5ff;
+    box-shadow: 0 0 15px #00e5ff;
+    animation: scan 2.5s linear infinite;
+    opacity: 0.5;
+}
+
+@keyframes scan {
+    0% {
+        top: 0%;
     }
-  </style>
+    50% {
+        top: 100%;
+    }
+    100% {
+        top: 0%;
+    }
+}
+
+.corner {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    border-color: #00e5ff;
+    z-index: 5;
+}
+
+.tl {
+    top: 10px;
+    left: 10px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+}
+
+.tr {
+    top: 10px;
+    right: 10px;
+    border-top: 2px solid;
+    border-right: 2px solid;
+}
+
+.bl {
+    bottom: 10px;
+    left: 10px;
+    border-bottom: 2px solid;
+    border-left: 2px solid;
+}
+
+.br {
+    bottom: 10px;
+    right: 10px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+}
+
+.info {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 14px;
+    background: #080e1b;
+    color: #9ba8c0;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+</style>
 </head>
 
 <body>
 
-  <h1>HAND GESTURE</h1>
+<div class="container">
 
-  <video id="camera" autoplay playsinline></video>
+<h1>AI HAND GESTURE</h1>
 
-  <div id="result">Tekan tombol untuk mulai</div>
-  <div id="fingers">Fingers: -</div>
+<div class="subtitle">
+Real-time hand gesture recognition
+</div>
 
-  <button onclick="startCamera()">START CAMERA</button>
+<div class="camera-box">
 
-  <script>
-    const video = document.getElementById("camera");
-    const result = document.getElementById("result");
-    const fingersText = document.getElementById("fingers");
+<video id="video" autoplay playsinline></video>
 
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user"
-          },
-          audio: false
-        });
+<canvas id="canvas"></canvas>
 
-        video.srcObject = stream;
+<div class="scanner"></div>
 
-        result.innerText = "Camera aktif!";
-        fingersText.innerText = "Fingers: belum dideteksi";
+<div class="corner tl"></div>
+<div class="corner tr"></div>
+<div class="corner bl"></div>
+<div class="corner br"></div>
 
-      } catch (error) {
-        result.innerText = "Kamera tidak bisa dibuka";
-        console.error(error);
-      }
-    }
-  </script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+</div>
+
+<div class="result">
+
+<div id="detected" class="detected">
+Menunggu gesture...
+</div>
+
+<div id="status" class="status">
+Tekan tombol untuk mengaktifkan kamera
+</div>
+
+<button onclick="startCamera()">
+START CAMERA
+</button>
+
+</div>
+
+<div class="info">
+
+✋ Hello My Name Is<br>
+☝️ Muhammad<br>
+✌️ Arjunnaja<br>
+👍 Program Studi<br>
+🤙 Informatika
+
+</div>
+
+</div>
+
 <script>
-const handDetector = new Hands({
-  locateFile: (file) => {
-    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-  }
-});
 
-handDetector.setOptions({
-  maxNumHands: 1,
-  modelComplexity: 1,
-  minDetectionConfidence: 0.6,
-  minTrackingConfidence: 0.6
-});
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-handDetector.onResults((results) => {
-  if (!results.multiHandLandmarks ||
-      results.multiHandLandmarks.length === 0) {
-    console.log("Tangan belum terlihat");
-    return;
-  }
+const detected = document.getElementById("detected");
+const statusText = document.getElementById("status");
 
-  const hand = results.multiHandLandmarks[0];
+let lastGesture = "";
+let lastSpeechTime = 0;
 
-  let fingers = 0;
+const gestureText = {
+    hello: "hello my name is",
+    muhammad: "Muhammad",
+    arjunnaja: "Arjunnaja",
+    program: "program studi",
+    informatika: "informatika"
+};
 
-  // Telunjuk
-  if (hand[8].y < hand[6].y) {
-    fingers++;
-  }
+function distance(a, b) {
 
-  // Jari tengah
-  if (hand[12].y < hand[10].y) {
-    fingers++;
-  }
+    return Math.sqrt(
+        Math.pow(a.x - b.x, 2) +
+        Math.pow(a.y - b.y, 2)
+    );
 
-  // Jari manis
-  if (hand[16].y < hand[14].y) {
-    fingers++;
-  }
-
-  // Kelingking
-  if (hand[20].y < hand[18].y) {
-    fingers++;
-  }
-
-  // Ibu jari
-  if (Math.abs(hand[4].x - hand[2].x) > 0.08) {
-    fingers++;
-  }
-
-  console.log("Jari terdeteksi:", fingers);
-
-  const fingersText = document.getElementById("fingersText");
-
-  if (fingersText) {
-    fingersText.innerText = "Fingers: " + fingers;
-  }
-
-  const result = document.getElementById("result");
-
-  if (result) {
-    if (fingers === 1) {
-      result.innerText = "MY NAME IS";
-    } else if (fingers === 2) {
-      result.innerText = "ARJUNNAJA";
-    } else {
-      result.innerText = "Tunjukkan gesture";
-    }
-  }
-});
-
-// Baca gambar dari kamera yang SUDAH ADA
-async function detectHand() {
-  const videoElement = document.getElementById("video");
-
-  if (videoElement && videoElement.readyState >= 2) {
-    await handDetector.send({ image: videoElement });
-  }
-
-  requestAnimationFrame(detectHand);
 }
 
-detectHand();
+function fingerUp(landmarks, tip, pip) {
+
+    return landmarks[tip].y < landmarks[pip].y;
+
+}
+
+function thumbUp(landmarks) {
+
+    const wrist = landmarks[0];
+
+    const tipDistance = distance(landmarks[4], wrist);
+    const ipDistance = distance(landmarks[3], wrist);
+
+    return tipDistance > ipDistance * 1.15;
+
+}
+
+function detectGesture(landmarks) {
+
+    const thumb = thumbUp(landmarks);
+
+    const index = fingerUp(landmarks, 8, 6);
+    const middle = fingerUp(landmarks, 12, 10);
+    const ring = fingerUp(landmarks, 16, 14);
+    const pinky = fingerUp(landmarks, 20, 18);
+
+    const count =
+        (thumb ? 1 : 0) +
+        (index ? 1 : 0) +
+        (middle ? 1 : 0) +
+        (ring ? 1 : 0) +
+        (pinky ? 1 : 0);
+
+    // ✋
+    if (count === 5) {
+        return "hello";
+    }
+
+    // ☝️
+    if (
+        index &&
+        !middle &&
+        !ring &&
+        !pinky &&
+        !thumb
+    ) {
+        return "muhammad";
+    }
+
+    // ✌️
+    if (
+        index &&
+        middle &&
+        !ring &&
+        !pinky &&
+        !thumb
+    ) {
+        return "arjunnaja";
+    }
+
+    // 👍
+    if (
+        thumb &&
+        !index &&
+        !middle &&
+        !ring &&
+        !pinky
+    ) {
+        return "program";
+    }
+
+    // 🤙
+    if (
+        thumb &&
+        pinky &&
+        !index &&
+        !middle &&
+        !ring
+    ) {
+        return "informatika";
+    }
+
+    return null;
+}
+
+function speak(text) {
+
+    if (!("speechSynthesis" in window)) {
+        return;
+    }
+
+    speechSynthesis.cancel();
+
+    const voice = new SpeechSynthesisUtterance(text);
+
+    voice.lang = "en-US";
+    voice.rate = 0.9;
+    voice.pitch = 1;
+
+    speechSynthesis.speak(voice);
+}
+
+function showGesture(gesture) {
+
+    if (!gesture) {
+        detected.innerText = "Gesture tidak dikenali";
+        return;
+    }
+
+    const text = gestureText[gesture];
+
+    detected.innerText = text;
+
+    const now = Date.now();
+
+    if (
+        gesture !== lastGesture ||
+        now - lastSpeechTime > 2500
+    ) {
+
+        speak(text);
+
+        lastGesture = gesture;
+        lastSpeechTime = now;
+
+    }
+
+}
+
+function onResults(results) {
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    if (
+        results.multiHandLandmarks &&
+        results.multiHandLandmarks.length > 0
+    ) {
+
+        for (
+            const landmarks of results.multiHandLandmarks
+        ) {
+
+            drawConnectors(
+                ctx,
+                landmarks,
+                HAND_CONNECTIONS,
+                {
+                    color: "#00e5ff",
+                    lineWidth: 3
+                }
+            );
+
+            drawLandmarks(
+                ctx,
+                landmarks,
+                {
+                    color: "#ffffff",
+                    fillColor: "#00e5ff",
+                    lineWidth: 2,
+                    radius: 5
+                }
+            );
+
+            const gesture =
+                detectGesture(landmarks);
+
+            showGesture(gesture);
+
+        }
+
+    } else {
+
+        detected.innerText =
+            "Tunjukkan tangan ke kamera";
+
+        lastGesture = "";
+
+    }
+
+}
+
+const hands = new Hands({
+    locateFile: (file) => {
+
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+
+    }
+
+});
+
+hands.setOptions({
+
+    maxNumHands: 1,
+
+    modelComplexity: 1,
+
+    minDetectionConfidence: 0.6,
+
+    minTrackingConfidence: 0.6
+
+});
+
+hands.onResults(onResults);
+
+let camera;
+
+function startCamera() {
+
+    statusText.innerText =
+        "Mengaktifkan kamera...";
+
+    camera = new Camera(
+        video,
+        {
+
+            onFrame: async () => {
+
+                await hands.send({
+                    image: video
+                });
+
+            },
+
+            width: 640,
+            height: 480
+
+        }
+    );
+
+    camera.start();
+
+    statusText.innerText =
+        "Kamera aktif • Sistem siap membaca gesture";
+
+}
+
 </script>
 
 </body>
 </html>
-
-
