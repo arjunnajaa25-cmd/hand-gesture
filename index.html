@@ -346,7 +346,42 @@ function detectGesture(landmarks) {
     return null;
 }
 
+let speechUnlocked = false;
+
+function unlockSpeech() {
+    if (!("speechSynthesis" in window)) {
+        return;
+    }
+
+    const test = new SpeechSynthesisUtterance("");
+    test.volume = 0;
+
+    speechSynthesis.speak(test);
+
+    speechUnlocked = true;
+}
+
 function speak(text) {
+
+    if (!("speechSynthesis" in window)) {
+        return;
+    }
+
+    if (!speechUnlocked) {
+        return;
+    }
+
+    speechSynthesis.cancel();
+
+    const voice = new SpeechSynthesisUtterance(text);
+
+    voice.lang = "en-US";
+    voice.rate = 0.85;
+    voice.pitch = 1;
+    voice.volume = 1;
+
+    speechSynthesis.speak(voice);
+}
 
     if (!("speechSynthesis" in window)) {
         return;
